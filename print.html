@@ -1,0 +1,647 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>طباعة البطاقات المهنية</title>
+    <!-- مكتبة qrcode-generator -->
+    <script src="https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.min.js"></script>
+    <!-- مكتبة تحويل HTML إلى صورة (html2canvas) -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Amiri:ital,wght@0,400;0,700;1,400&display=swap');
+
+        @page {
+            size: A4 portrait;
+            margin: 8mm;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Sakkal Majalla', 'Amiri', 'Traditional Arabic', sans-serif;
+        }
+
+        body {
+            background-color: #f1f5f9;
+            color: #1e293b;
+        }
+
+        .no-print {
+            background: #ffffff;
+            padding: 12px 20px;
+            border-bottom: 1px solid #e2e8f0;
+            text-align: center;
+            margin-bottom: 20px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 15px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+
+        .btn-print {
+            background-color: #047857;
+            color: white;
+            padding: 10px 24px;
+            border: none;
+            border-radius: 6px;
+            font-weight: bold;
+            cursor: pointer;
+            font-size: 16px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            transition: background 0.2s;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .btn-print:hover {
+            background-color: #065f46;
+        }
+
+        .btn-print-back {
+            background-color: #0284c7;
+        }
+
+        .btn-print-back:hover {
+            background-color: #0369a1;
+        }
+
+        .btn-home {
+            background-color: #475569;
+        }
+
+        .btn-home:hover {
+            background-color: #334155;
+        }
+
+        .page {
+            width: 194mm;
+            height: 281mm;
+            page-break-after: always;
+            margin: 0 auto 20px auto;
+            background: white;
+            padding: 2mm;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+            
+            display: grid;
+            grid-template-columns: repeat(2, 97mm);
+            grid-template-rows: repeat(4, 65mm);
+            gap: 3mm;
+            justify-content: center;
+            align-content: center;
+        }
+
+        .card {
+            width: 97mm;
+            height: 65mm;
+            border: 1px solid #cbd5e1;
+            border-radius: 5px;
+            position: relative;
+            overflow: hidden;
+            background: #ffffff;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            cursor: pointer;
+            transition: transform 0.15s ease, box-shadow 0.15s ease;
+        }
+
+        .card:hover, .card-back:hover {
+            transform: scale(1.015);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        }
+
+        /* --- الهيدر --- */
+        .card-header {
+            background-color: #ffffff;
+            color: #000000;
+            position: relative;
+            height: 15mm;
+            border-bottom: 1px solid #000000;
+            padding: 2px 4px;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            overflow: hidden;
+        }
+
+        .corner-stripes {
+            position: absolute;
+            top: 0;
+            right: 0;
+            width: 25mm;
+            height: 15mm;
+            z-index: 1;
+            pointer-events: none;
+        }
+
+        .stripe-red {
+            position: absolute;
+            top: -2mm;
+            right: 5mm;
+            width: 2mm;
+            height: 25mm;
+            background-color: #d21034;
+            transform: rotate(-45deg);
+            transform-origin: top right;
+        }
+
+        .stripe-green {
+            position: absolute;
+            top: -2mm;
+            right: 9mm;
+            width: 2mm;
+            height: 25mm;
+            background-color: #006633;
+            transform: rotate(-45deg);
+            transform-origin: top right;
+        }
+
+        .header-top {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+            z-index: 2;
+            margin-top: 1px;
+        }
+
+        .header-logo {
+            position: absolute;
+            left: 2px;
+            top: 0px;
+            width: 11mm;
+            height: 11mm;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .header-logo img {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+        }
+
+        .header-main-title {
+            font-size: 10.5pt;
+            font-weight: bold;
+            color: #000000;
+            text-align: center;
+            line-height: 1.1;
+        }
+
+        .header-bottom {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            position: relative;
+            z-index: 2;
+            padding: 0 4px;
+            margin-bottom: 1px;
+        }
+
+        .header-bottom .ministry, .header-bottom .directorate {
+            font-size: 8.5pt;
+            font-weight: bold;
+            color: #000000;
+        }
+
+        .card-main-title {
+            text-align: center;
+            font-size: 11pt;
+            font-weight: bold;
+            color: #000000;
+            margin-top: 2px;
+            line-height: 1;
+            display: inline-block;
+            margin-left: auto;
+            margin-right: auto;
+            border-bottom: 1px solid #000000;
+            padding-bottom: 1mm;
+        }
+
+        .card-body {
+            display: flex;
+            align-items: center;
+            padding: 2px 5px;
+            height: 36mm;
+            gap: 4px;
+            flex-direction: row;
+        }
+
+        .qr-container {
+            width: 21mm;
+            height: 21mm;
+            flex-shrink: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .qr-container svg {
+            width: 100% !important;
+            height: 100% !important;
+        }
+
+        .info-container {
+            flex-grow: 1;
+            display: flex;
+            flex-direction: column;
+            gap: 1px;
+            overflow: hidden;
+        }
+
+        .info-row {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .info-label {
+            font-size: 7pt;
+            color: #475569;
+            font-weight: bold;
+            line-height: 1;
+        }
+
+        .info-value {
+            font-size: 9pt;
+            color: #0f172a;
+            font-weight: bold;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            line-height: 1.1;
+        }
+
+        .photo-column {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: flex-start;
+            width: 28mm;
+            height: 37mm;
+            flex-shrink: 0;
+            gap: 1.5px;
+        }
+
+        .code-above-photo {
+            font-size: 8pt;
+            font-weight: bold;
+            color: #000000;
+            text-align: center;
+            line-height: 1;
+            white-space: nowrap;
+        }
+
+        .code-space-1cm {
+            display: inline-block;
+            width: 1cm;
+        }
+
+        .photo-container {
+            width: 23mm;
+            height: 26mm;
+            border: 1.5px solid #047857;
+            border-radius: 4px;
+            background: #f8fafc;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 8pt;
+            color: #94a3b8;
+            overflow: hidden;
+            flex-shrink: 0;
+        }
+
+        .photo-container img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .director-below-photo {
+            font-size: 6.5pt;
+            font-weight: bold;
+            color: #1e293b;
+            text-align: center;
+            line-height: 1;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            max-width: 100%;
+            margin-top: 1px;
+            padding-bottom: 1px;
+        }
+
+        .card-footer {
+            height: 7.5mm;
+            background-color: #064e3b;
+            color: #ffffff;
+            font-size: 7pt;
+            font-weight: bold;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            padding: 0 3px;
+            line-height: 1.1;
+        }
+
+        .card-back {
+            width: 97mm;
+            height: 65mm;
+            border: 1px solid #cbd5e1;
+            border-radius: 5px;
+            overflow: hidden;
+            background: #ffffff;
+            cursor: pointer;
+            transition: transform 0.15s ease, box-shadow 0.15s ease;
+        }
+
+        .card-back img {
+            width: 100%;
+            height: 100%;
+            object-fit: fill;
+        }
+
+        @media print {
+            .no-print {
+                display: none !important;
+            }
+
+            body {
+                background: none;
+            }
+
+            .page {
+                box-shadow: none;
+                margin: 0;
+                padding: 0;
+            }
+
+            .card, .card-back {
+                border: 0.5pt solid #cbd5e1;
+                transform: none !important;
+                box-shadow: none !important;
+            }
+
+            body.print-front-mode .back-page {
+                display: none !important;
+            }
+
+            body.print-back-mode .front-page {
+                display: none !important;
+            }
+        }
+    </style>
+</head>
+<body class="print-front-mode">
+
+    <div class="no-print">
+        <button onclick="goToHome()" class="btn-print btn-home">العودة إلى الصفحة الرئيسية</button>
+        <button onclick="printFront()" class="btn-print">طباعة الوجه (البطاقات)</button>
+        <button onclick="printBack()" class="btn-print btn-print-back">طباعة الظهر (الخلفية)</button>
+    </div>
+
+    <div id="printContainer"></div>
+
+    <script>
+        function utf8Encode(str) {
+            return unescape(encodeURIComponent(str));
+        }
+
+        function formatDate(dateObj) {
+            const y = dateObj.getFullYear();
+            const m = String(dateObj.getMonth() + 1).padStart(2, '0');
+            const d = String(dateObj.getDate()).padStart(2, '0');
+            return `${y}/${m}/${d}`;
+        }
+
+        function goToHome() {
+            if (window.history.length > 1) {
+                window.history.back();
+            } else {
+                window.location.href = 'index.html';
+            }
+        }
+
+        async function downloadCardAsJpg(cardElement, filename) {
+            try {
+                const originalTransform = cardElement.style.transform;
+                cardElement.style.transform = 'none';
+
+                const canvas = await html2canvas(cardElement, {
+                    scale: 3,
+                    useCORS: true,
+                    allowTaint: true,
+                    logging: false,
+                    backgroundColor: '#ffffff'
+                });
+
+                cardElement.style.transform = originalTransform;
+
+                const link = document.createElement('a');
+                link.download = `${filename}.jpg`;
+                link.href = canvas.toDataURL('image/jpeg', 0.95);
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+            } catch (err) {
+                console.error("خطأ أثناء تحميل الصورة:", err);
+                alert("حدث خطأ أثناء حفظ الصورة!");
+            }
+        }
+
+        function renderCards() {
+            const container = document.getElementById('printContainer');
+            const printDataRaw = localStorage.getItem('print_data');
+            
+            let printData = null;
+            if (printDataRaw) {
+                try {
+                    printData = JSON.parse(printDataRaw);
+                } catch(e) {
+                    console.error("خطأ في قراءة البيانات", e);
+                }
+            }
+
+            if (!printData || !printData.employees || printData.employees.length === 0) {
+                const sampleEmployees = [];
+                for (let i = 1; i <= 8; i++) {
+                    sampleEmployees.push({
+                        code: "100" + i,
+                        lastName: "بن محمد",
+                        firstName: "عبد الله " + i,
+                        birthDate: "1988/05/12",
+                        rank: "أستاذ التعليم الثانوي",
+                        photo: ""
+                    });
+                }
+                printData = {
+                    employees: sampleEmployees,
+                    workPlace: "ثانوية متقن أدرار",
+                    directorName: "أحمد علي",
+                    cardBackImage: "aria.jpg"
+                };
+            }
+
+            const employees = printData.employees || [];
+            const workPlace = printData.workPlace || '';
+            const directorName = printData.directorName || '';
+            const cardBackImage = printData.cardBackImage || 'aria.jpg';
+
+            const now = new Date();
+            const expDateObj = new Date(now);
+            expDateObj.setFullYear(expDateObj.getFullYear() + 5); // زيادة فترة الصلاحية إلى 5 سنوات
+            const expiryDate = formatDate(expDateObj);
+            const currentYear = now.getFullYear();
+
+            const total = employees.length;
+            const pages = Math.ceil(total / 8);
+
+            let html = '';
+
+            for (let p = 0; p < pages; p++) {
+                html += `<div class="page front-page">`;
+                for (let i = 0; i < 8; i++) {
+                    const index = (p * 8) + i;
+                    if (index >= total) break;
+
+                    const emp = employees[index];
+                    const code = emp.code || '';
+                    const lastName = emp.lastName || '';
+                    const firstName = emp.firstName || '';
+                    const fullName = (lastName + ' ' + firstName).trim();
+                    const birthDate = emp.birthDate || '';
+                    const rank = emp.rank || '';
+                    const photo = emp.photo || '';
+
+                    const qrContent = `الرمز الوظيفي: ${code}
+الاسم واللقب: ${fullName}
+تاريخ نهاية الصلاحية: ${expiryDate}`;
+
+                    const qrId = `qr_${p}_${i}`;
+                    const fileNameToSave = `بطاقة_${fullName || code}_${code}`;
+
+                    html += `
+                    <div class="card" title="اضغط لتحميل البطاقة كصورة JPG" onclick="downloadCardAsJpg(this, '${fileNameToSave}')">
+                        <div class="card-header">
+                            <div class="corner-stripes">
+                                <div class="stripe-red"></div>
+                                <div class="stripe-green"></div>
+                            </div>
+                            <div class="header-top">
+                                <div class="header-logo">
+                                    <img src="minis.jpg" alt="شعار الوزارة" onerror="this.style.display='none'">
+                                </div>
+                                <div class="header-main-title">الجمهورية الجزائرية الديمقراطية الشعبية</div>
+                            </div>
+                            <div class="header-bottom">
+                                <span class="directorate">مديرية التربية لولاية أدرار</span>
+                                <span class="ministry">وزارة التربية الوطنية</span>
+                            </div>
+                        </div>
+
+                        <div style="text-align: center;">
+                            <div class="card-main-title">بطاقة التعريف المهنية</div>
+                        </div>
+
+                        <div class="card-body">
+                            <div class="qr-container" id="${qrId}" data-qr="${encodeURIComponent(qrContent)}"></div>
+
+                            <div class="info-container">
+                                <div class="info-row">
+                                    <span class="info-label">اللقب والاسم</span>
+                                    <span class="info-value">${fullName}</span>
+                                </div>
+                                <div class="info-row">
+                                    <span class="info-label">تاريخ الميلاد</span>
+                                    <span class="info-value font-mono">${birthDate}</span>
+                                </div>
+                                <div class="info-row">
+                                    <span class="info-label">الرتبة</span>
+                                    <span class="info-value">${rank}</span>
+                                </div>
+                                ${workPlace ? `
+                                <div class="info-row">
+                                    <span class="info-label">مكان العمل</span>
+                                    <span class="info-value">${workPlace}</span>
+                                </div>` : ''}
+                            </div>
+
+                            <div class="photo-column">
+                                <div class="code-above-photo">
+                                    الرقم:<span class="code-space-1cm"></span>/${currentYear}
+                                </div>
+                                <div class="photo-container">
+                                    ${photo ? `<img src="${photo}" alt="الصورة">` : `<span>صورة</span>`}
+                                </div>
+                                <div class="director-below-photo">
+                                    ${directorName ? 'مدير التربية: ' + directorName : 'مدير التربية'}
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="card-footer">
+                            على السلطات المدنية والعسكرية أن تسمح لحامل هذه البطاقة بالمرور في كل الحالات
+                        </div>
+                    </div>`;
+                }
+                html += `</div>`;
+            }
+
+            for (let p = 0; p < pages; p++) {
+                html += `<div class="page back-page">`;
+                for (let i = 0; i < 8; i++) {
+                    const index = (p * 8) + i;
+                    if (index >= total) break;
+                    const emp = employees[index];
+                    const code = emp.code || '';
+                    const fullName = (emp.lastName + ' ' + emp.firstName).trim();
+                    const backFileName = `ظهر_بطاقة_${fullName || code}_${code}`;
+
+                    html += `
+                    <div class="card-back" title="اضغط لتحميل خلفية البطاقة كصورة JPG" onclick="downloadCardAsJpg(this, '${backFileName}')">
+                        <img src="${cardBackImage}" alt="خلفية البطاقة" onerror="this.src='aria.jpg'">
+                    </div>`;
+                }
+                html += `</div>`;
+            }
+
+            container.innerHTML = html;
+
+            document.querySelectorAll('.qr-container').forEach(c => {
+                const rawText = decodeURIComponent(c.getAttribute('data-qr'));
+                if (rawText) {
+                    try {
+                        const qr = qrcode(0, 'L');
+                        qr.addData(utf8Encode(rawText), 'Byte');
+                        qr.make();
+                        c.innerHTML = qr.createSvgTag({ scalable: true, margin: 0 });
+                    } catch (e) {
+                        console.error("خطأ إنشاء QR:", e);
+                    }
+                }
+            });
+        }
+
+        function printFront() {
+            document.body.className = 'print-front-mode';
+            window.print();
+        }
+
+        function printBack() {
+            document.body.className = 'print-back-mode';
+            window.print();
+        }
+
+        document.addEventListener("DOMContentLoaded", renderCards);
+    </script>
+</body>
+</html>
